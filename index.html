@@ -1,1 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BeckScout</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0c10;--bg2:#13141a;--bg3:#1a1b23;--surface:#21222d;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#e8e6f0;--muted:#7a7890;--hint:#4e4d60;
+  --accent:#6c63ff;--accent-lt:rgba(108,99,255,0.15);--accent-bd:rgba(108,99,255,0.4);
+  --green:#3dd68c;--green-lt:rgba(61,214,140,0.12);--green-bd:rgba(61,214,140,0.3);
+  --red:#f0606a;--red-lt:rgba(240,96,106,0.1);--red-bd:rgba(240,96,106,0.3);
+  --amber:#f0b429;--amber-lt:rgba(240,180,41,0.1);--amber-bd:rgba(240,180,41,0.3);
+  --blue:#4db8ff;--purple:#b57bff;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.topbar{display:flex;align-items:center;gap:12px;padding:0 1.5rem;height:52px;border-bottom:0.5px solid var(--border);background:var(--bg2)}
+.logo{display:flex;align-items:center;gap:9px}
+.logo-icon{width:26px;height:26px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center}
+.logo-name{font-size:15px;font-weight:700;letter-spacing:-0.3px}
+.logo-name span{color:var(--accent)}
+.api-status-lbl{margin-left:auto;font-size:11px;color:var(--hint)}
+.api-status-lbl.ok{color:var(--green)}
+.api-bar{background:var(--bg2);border-bottom:0.5px solid var(--border);padding:.7rem 1.5rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.api-bar label{font-size:12px;color:var(--muted);white-space:nowrap;flex-shrink:0}
+.api-bar input{flex:1;min-width:200px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:6px;padding:7px 12px;color:var(--text);font-size:13px;font-family:monospace;outline:none;transition:border-color .15s}
+.api-bar input:focus{border-color:var(--accent)}
+.api-bar input::placeholder{color:var(--hint)}
+.api-save-btn{background:var(--surface);border:0.5px solid var(--border2);color:var(--muted);border-radius:6px;padding:7px 14px;font-size:12px;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.api-save-btn:hover{border-color:var(--accent);color:var(--accent)}
+.api-link{font-size:11px;color:var(--accent);text-decoration:none;white-space:nowrap;flex-shrink:0}
+.api-link:hover{text-decoration:underline}
+.layout{display:flex;height:calc(100vh - 100px)}
+.sidebar{width:270px;flex-shrink:0;border-right:0.5px solid var(--border);background:var(--bg2);overflow-y:auto;display:flex;flex-direction:column}
+.sb-sec{padding:1.25rem;border-bottom:0.5px solid var(--border)}
+.sb-lbl{font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--hint);margin-bottom:10px}
+.mkt-input{width:100%;background:var(--bg3);border:0.5px solid var(--border2);border-radius:8px;padding:10px 13px;color:var(--text);font-size:14px;outline:none;margin-bottom:9px;transition:border-color .15s}
+.mkt-input:focus{border-color:var(--accent)}
+.mkt-input::placeholder{color:var(--hint)}
+.run-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s}
+.run-btn:hover{opacity:.9}
+.run-btn:disabled{background:var(--surface);color:var(--muted);cursor:not-allowed}
+.spin{width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;display:none}
+@keyframes s{to{transform:rotate(360deg)}}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{background:var(--surface);border:0.5px solid var(--border2);border-radius:6px;padding:4px 9px;font-size:12px;color:var(--muted);cursor:pointer;transition:all .12s}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.f-row{margin-bottom:12px}
+.f-row label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
+.f-sel{width:100%;background:var(--bg3);border:0.5px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-size:13px;outline:none}
+.mkt-stats{display:none}
+.sm{margin-bottom:12px}
+.sm-l{font-size:11px;color:var(--muted);margin-bottom:3px}
+.sm-v{font-size:18px;font-weight:600}
+.main{flex:1;overflow-y:auto;background:var(--bg)}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:2rem;color:var(--muted)}
+.empty-icon{width:56px;height:56px;background:var(--surface);border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:1.25rem}
+.empty h2{font-size:17px;color:var(--text);margin-bottom:7px}
+.empty p{font-size:13px;max-width:300px;line-height:1.6}
+.status-row{display:none;align-items:center;gap:11px;padding:1.25rem 1.5rem;font-size:13px;color:var(--muted)}
+.spin2{width:15px;height:15px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:s .7s linear infinite;flex-shrink:0}
+.err-box{display:none;margin:1rem 1.5rem;padding:1rem 1.25rem;background:var(--red-lt);border:0.5px solid var(--red-bd);border-radius:8px;font-size:13px;color:var(--red)}
+.res-hdr{display:none;padding:1.25rem 1.5rem .75rem;border-bottom:0.5px solid var(--border);background:var(--bg2)}
+.res-title{font-size:17px;font-weight:600;letter-spacing:-.2px}
+.res-sub{font-size:12px;color:var(--muted);margin-top:3px}
+.opp-bar{display:none;margin:1.25rem 1.5rem;background:var(--bg2);border:0.5px solid var(--border2);border-radius:10px;padding:1.1rem 1.4rem}
+.opp-row{display:flex;gap:1.75rem;flex-wrap:wrap}
+.ov{font-size:20px;font-weight:700;line-height:1}
+.ol{font-size:11px;color:var(--muted)}
+.prods-area{display:none;padding:0 1.5rem 2rem}
+.area-lbl{font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--hint);margin-bottom:10px}
+.pcard{background:var(--bg2);border:0.5px solid var(--border2);border-radius:12px;margin-bottom:11px;overflow:hidden;transition:border-color .15s}
+.pcard:hover{border-color:rgba(108,99,255,.3)}
+.pcard.top{border-color:var(--accent-bd);border-width:1.5px}
+.card-hdr{display:flex;align-items:flex-start;gap:12px;padding:1.1rem 1.4rem;border-bottom:0.5px solid var(--border)}
+.c-rank{font-size:11px;font-weight:700;color:var(--hint);min-width:18px;padding-top:3px}
+.c-rank.top{color:var(--accent)}
+.c-info{flex:1;min-width:0}
+.c-name{font-size:14px;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:5px}
+.c-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.c-price{font-size:14px;font-weight:700;color:var(--green)}
+.rbadge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px}
+.rh{background:var(--red-lt);border:0.5px solid var(--red-bd);color:var(--red)}
+.rm{background:var(--amber-lt);border:0.5px solid var(--amber-bd);color:var(--amber)}
+.rl{background:var(--green-lt);border:0.5px solid var(--green-bd);color:var(--green)}
+.c-verdict{font-size:12px;color:var(--muted);margin-top:7px;line-height:1.5}
+.top-lbl{display:none;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:var(--accent-lt);border:0.5px solid var(--accent-bd);color:var(--accent)}
+.pcard.top .top-lbl{display:inline}
+.sc-circle{width:52px;height:52px;border-radius:50%;border:2px solid;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
+.sc-circle .sn{font-size:16px;font-weight:700;line-height:1}
+.sc-circle .sl{font-size:8px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-top:1px}
+.sa{border-color:var(--green);color:var(--green)}
+.sb{border-color:var(--blue);color:var(--blue)}
+.sc{border-color:var(--amber);color:var(--amber)}
+.sd{border-color:var(--red);color:var(--red)}
+.card-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:0.5px solid var(--border)}
+.mc{padding:.75rem 1.4rem;border-right:0.5px solid var(--border)}
+.mc:last-child{border-right:none}
+.mc-l{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--hint);margin-bottom:4px}
+.mc-v{font-size:15px;font-weight:700;color:var(--text);line-height:1}
+.mc-v.g{color:var(--green)}.mc-v.a{color:var(--amber)}.mc-v.r{color:var(--red)}.mc-v.b{color:var(--blue)}
+.mc-s{font-size:11px;color:var(--muted);margin-top:2px}
+.card-bot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:.75rem 1.4rem;gap:.875rem}
+.cb-l{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--hint);margin-bottom:5px}
+.con-wrap{height:4px;background:var(--surface);border-radius:2px;overflow:hidden;margin-bottom:3px}
+.con-fill{height:100%;border-radius:2px}
+.rtags{display:flex;flex-wrap:wrap;gap:4px}
+.rtag{font-size:10px;padding:2px 7px;border-radius:4px;font-weight:500}
+.re{background:rgba(77,184,255,.1);color:var(--blue);border:0.5px solid rgba(77,184,255,.25)}
+.rb{background:var(--red-lt);color:var(--red);border:0.5px solid var(--red-bd)}
+.rh2{background:var(--amber-lt);color:var(--amber);border:0.5px solid var(--amber-bd)}
+.rs{background:rgba(181,123,255,.1);color:var(--purple);border:0.5px solid rgba(181,123,255,.25)}
+.rg{background:var(--surface);color:var(--muted);border:0.5px solid var(--border2)}
+.rsf{background:var(--green-lt);color:var(--green);border:0.5px solid var(--green-bd)}
+@media(max-width:680px){.card-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.card-bot{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
 
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M1 10L5 5.5L7.5 8L11 3.5L13 5.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <span class="logo-name">Beck<span>Scout</span></span>
+  </div>
+  <span class="api-status-lbl" id="api-lbl">No API key set</span>
+</div>
+
+<div class="api-bar">
+  <label>Anthropic API Key</label>
+  <input type="text" id="api-input" placeholder="sk-ant-..." autocomplete="off" spellcheck="false" />
+  <button class="api-save-btn" onclick="saveKey()">Save key</button>
+  <a class="api-link" href="https://console.anthropic.com/settings/keys" target="_blank">Get a free key →</a>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sb-sec">
+      <div class="sb-lbl">Market Research</div>
+      <input class="mkt-input" type="text" id="mkt-input" placeholder="e.g. posture correctors" />
+      <button class="run-btn" id="run-btn" onclick="runResearch()">
+        <div class="spin" id="btn-spin"></div>
+        <span id="btn-txt">Analyze Market →</span>
+      </button>
+      <div class="chips">
+        <div class="chip" onclick="setM('yoga mats')">Yoga mats</div>
+        <div class="chip" onclick="setM('posture correctors')">Posture correctors</div>
+        <div class="chip" onclick="setM('air fryers')">Air fryers</div>
+        <div class="chip" onclick="setM('resistance bands')">Resistance bands</div>
+        <div class="chip" onclick="setM('LED desk lamps')">Desk lamps</div>
+        <div class="chip" onclick="setM('dog water bottles')">Dog bottles</div>
+      </div>
+    </div>
+    <div class="sb-sec">
+      <div class="sb-lbl">Filters</div>
+      <div class="f-row"><label>Min score</label><select class="f-sel" id="f-score"><option value="0">Any</option><option value="60">60+</option><option value="70">70+</option><option value="80">80+</option></select></div>
+      <div class="f-row"><label>Max risk</label><select class="f-sel" id="f-risk"><option value="any">Any</option><option value="low">Low only</option><option value="medium">Low + Medium</option></select></div>
+      <div class="f-row"><label>Min monthly revenue</label><select class="f-sel" id="f-rev"><option value="0">Any</option><option value="5000">$5k+</option><option value="10000">$10k+</option><option value="50000">$50k+</option></select></div>
+    </div>
+    <div class="sb-sec mkt-stats" id="mkt-stats">
+      <div class="sb-lbl">Market Summary</div>
+      <div class="sm"><div class="sm-l">Avg Monthly Revenue</div><div class="sm-v" id="ms-rev">—</div></div>
+      <div class="sm"><div class="sm-l">Avg Margin</div><div class="sm-v" id="ms-mar">—</div></div>
+      <div class="sm"><div class="sm-l">Avg Monthly Units</div><div class="sm-v" id="ms-units">—</div></div>
+      <div class="sm"><div class="sm-l">Products Analyzed</div><div class="sm-v" id="ms-cnt">—</div></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="empty" id="empty">
+      <div class="empty-icon">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+          <path d="M3 19L8 12L12 16L17 9L23 13" stroke="#4e4d60" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="3" y="21" width="18" height="1.5" rx=".75" fill="#4e4d60"/>
+        </svg>
+      </div>
+      <h2 id="empty-h">Enter your API key to start</h2>
+      <p id="empty-p">Paste your Anthropic API key above, then type any product market to analyze.</p>
+    </div>
+    <div class="status-row" id="status-row"><div class="spin2"></div><span id="status-txt">Analyzing...</span></div>
+    <div class="err-box" id="err-box"></div>
+    <div class="res-hdr" id="res-hdr"><div class="res-title" id="res-title"></div><div class="res-sub" id="res-sub"></div></div>
+    <div class="opp-bar" id="opp-bar"><div class="opp-row" id="opp-row"></div></div>
+    <div class="prods-area" id="prods-area"><div class="area-lbl">Products Found</div><div id="prods-list"></div></div>
+  </div>
+</div>
+
+<script>
+let KEY = '';
+
+function saveKey() {
+  const v = document.getElementById('api-input').value.trim();
+  if (!v) { showErr('Please paste your Anthropic API key first.'); return; }
+  if (!v.startsWith('sk-ant')) {
+    showErr('That doesn\'t look right — Anthropic API keys start with "sk-ant". Got: ' + v.slice(0, 10) + '...');
+    return;
+  }
+  KEY = v;
+  document.getElementById('api-lbl').textContent = 'Key set (' + v.length + ' chars)';
+  document.getElementById('api-lbl').className = 'api-status-lbl ok';
+  document.getElementById('api-input').value = v.slice(0, 12) + '●'.repeat(8) + '...' + v.slice(-4);
+  hideErr();
+  document.getElementById('empty-h').textContent = 'Enter a product market';
+  document.getElementById('empty-p').textContent = 'Type any Amazon niche and BeckScout will analyze the top products with full financials and opportunity scores.';
+}
+
+document.getElementById('api-input').addEventListener('keydown', e => { if (e.key === 'Enter') saveKey(); });
+document.getElementById('mkt-input').addEventListener('keydown', e => { if (e.key === 'Enter') runResearch(); });
+function setM(v) { document.getElementById('mkt-input').value = v; }
+
+function setStatus(t) {
+  const el = document.getElementById('status-row');
+  if (t) { el.style.display = 'flex'; document.getElementById('status-txt').textContent = t; }
+  else el.style.display = 'none';
+}
+function showErr(m) { const e = document.getElementById('err-box'); e.style.display = 'block'; e.textContent = m; }
+function hideErr() { document.getElementById('err-box').style.display = 'none'; }
+
+async function runResearch() {
+  if (!KEY) { showErr('Please enter and save your Anthropic API key first.'); return; }
+  const market = document.getElementById('mkt-input').value.trim();
+  if (!market) return;
+
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  document.getElementById('btn-spin').style.display = 'block';
+  document.getElementById('btn-txt').textContent = 'Analyzing...';
+  document.getElementById('empty').style.display = 'none';
+  document.getElementById('res-hdr').style.display = 'none';
+  document.getElementById('opp-bar').style.display = 'none';
+  document.getElementById('prods-area').style.display = 'none';
+  document.getElementById('mkt-stats').style.display = 'none';
+  document.getElementById('prods-list').innerHTML = '';
+  hideErr();
+  setStatus('Researching Amazon market for "' + market + '"...');
+
+  const prompt = `Research the Amazon market for: "${market}"
+
+Return a JSON object with exactly 5 Amazon products in this niche. Use realistic product names, prices, and sales figures.
+
+Use these formulas:
+- cogs = price * 0.30
+- amazonFees = (price * 0.15) + 3.50
+- profitPerUnit = price - cogs - amazonFees
+- marginPercent = one decimal: (profitPerUnit / price) * 100
+- monthlyRevenue = price * monthlySalesVolume
+- totalScore = 0-100 integer
+
+Respond ONLY with a JSON object. No text before or after it. Begin with { and end with }.
+
+{"market":"string","marketSummary":"string","products":[{"name":"string","price":0,"monthlySalesVolume":0,"monthlyRevenue":0,"salesConsistency":0,"consistencyNote":"string","cogs":0,"amazonFees":0,"profitPerUnit":0,"marginPercent":0,"cpc":0,"reviewCount":0,"avgRating":0,"riskLevel":"low","riskFactors":[],"totalScore":0,"verdict":"string"}]}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 3000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e.error?.message || 'API error ' + res.status);
+    }
+
+    const data = await res.json();
+    const block = (data.content || []).find(b => b.type === 'text');
+    if (!block) throw new Error('Empty response. Please try again.');
+    let raw = block.text.trim();
+    const s = raw.indexOf('{'), e = raw.lastIndexOf('}');
+    if (s < 0 || e < 0) throw new Error('Invalid response format. Please try again.');
+    const parsed = JSON.parse(raw.slice(s, e + 1));
+    if (!parsed.products?.length) throw new Error('No products returned. Please try again.');
+    renderAll(parsed);
+  } catch (err) {
+    document.getElementById('empty').style.display = 'flex';
+    showErr('Error: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    document.getElementById('btn-spin').style.display = 'none';
+    document.getElementById('btn-txt').textContent = 'Analyze Market →';
+    setStatus(null);
+  }
+}
+
+function renderAll(data) {
+  const minSc = parseInt(document.getElementById('f-score').value) || 0;
+  const maxRk = document.getElementById('f-risk').value;
+  const minRv = parseInt(document.getElementById('f-rev').value) || 0;
+  const rN = { low: 1, medium: 2, high: 3 };
+  const maxRN = maxRk === 'low' ? 1 : maxRk === 'medium' ? 2 : 3;
+  let prods = (data.products || [])
+    .filter(p => (p.totalScore||0) >= minSc && (rN[p.riskLevel]||2) <= maxRN && (p.monthlyRevenue||0) >= minRv)
+    .sort((a, b) => (b.totalScore||0) - (a.totalScore||0));
+  if (!prods.length) { showErr('No products matched filters. Try relaxing them.'); document.getElementById('empty').style.display = 'flex'; return; }
+
+  const avgR = Math.round(prods.reduce((s,p) => s+(p.monthlyRevenue||0), 0) / prods.length);
+  const avgM = Math.round(prods.reduce((s,p) => s+(p.marginPercent||0), 0) / prods.length);
+  const totR = prods.reduce((s,p) => s+(p.monthlyRevenue||0), 0);
+  const avgU = Math.round(prods.reduce((s,p) => s+(p.monthlySalesVolume||0), 0) / prods.length);
+
+  document.getElementById('res-hdr').style.display = 'block';
+  document.getElementById('res-title').textContent = (data.market||'Market') + ' — Amazon Analysis';
+  document.getElementById('res-sub').textContent = data.marketSummary || '';
+  document.getElementById('opp-bar').style.display = 'block';
+  document.getElementById('opp-row').innerHTML = [
+    {l:'Total market revenue',v:'$'+totR.toLocaleString(),c:'var(--green)'},
+    {l:'Avg monthly revenue',v:'$'+avgR.toLocaleString(),c:'var(--text)'},
+    {l:'Avg margin',v:avgM+'%',c:avgM>=25?'var(--green)':avgM>=15?'var(--amber)':'var(--red)'},
+    {l:'Avg monthly units',v:avgU.toLocaleString(),c:'var(--text)'},
+    {l:'Top score',v:(prods[0].totalScore||0)+'/100',c:'var(--accent)'}
+  ].map(x=>`<div style="display:flex;flex-direction:column;gap:2px"><div class="ov" style="color:${x.c}">${x.v}</div><div class="ol">${x.l}</div></div>`).join('');
+
+  document.getElementById('mkt-stats').style.display = 'block';
+  document.getElementById('ms-rev').textContent = '$'+avgR.toLocaleString();
+  document.getElementById('ms-mar').textContent = avgM+'%';
+  document.getElementById('ms-units').textContent = avgU.toLocaleString();
+  document.getElementById('ms-cnt').textContent = prods.length;
+
+  document.getElementById('prods-area').style.display = 'block';
+  const list = document.getElementById('prods-list');
+  list.innerHTML = '';
+  prods.forEach((p, i) => list.appendChild(buildCard(p, i)));
+}
+
+function buildCard(p, i) {
+  const div = document.createElement('div');
+  div.className = 'pcard' + (i===0?' top':'');
+  const sc = p.totalScore||0;
+  const scCls = sc>=75?'sa':sc>=60?'sb':sc>=45?'sc':'sd';
+  const rl = (p.riskLevel||'medium').toLowerCase();
+  const rbCls = rl==='high'?'rh':rl==='low'?'rl':'rm';
+  const rbDot = rl==='high'?'▲':rl==='low'?'●':'◆';
+  const mrC = (p.marginPercent||0)>=30?'g':(p.marginPercent||0)>=20?'a':'r';
+  const rvC = (p.monthlyRevenue||0)>=20000?'g':(p.monthlyRevenue||0)>=8000?'b':'a';
+  const cpcC = (p.cpc||0)<=1?'g':(p.cpc||0)<=2?'a':'r';
+  const rat = Math.min(5,Math.max(0,parseFloat(p.avgRating)||0));
+  let stars = '';
+  for (let s=0;s<5;s++) stars += s<Math.floor(rat)?`<span style="color:var(--amber);font-size:12px">★</span>`:s===Math.floor(rat)&&rat%1>=.5?`<span style="color:var(--amber);font-size:12px">☆</span>`:`<span style="color:var(--hint);font-size:12px">☆</span>`;
+  const rth = (p.riskFactors||[]).map(rf => {
+    const r = rf.toLowerCase();
+    const c = r.includes('elec')?'re':r.includes('frag')||r.includes('break')?'rb':r.includes('heavy')||r.includes('over')?'rh2':r.includes('season')?'rs':'rg';
+    return `<span class="rtag ${c}">${rf}</span>`;
+  }).join('');
+  const noR = !p.riskFactors?.length?'<span class="rtag rsf">Low risk</span>':'';
+  const conCol = (p.salesConsistency||0)>=75?'var(--green)':(p.salesConsistency||0)>=50?'var(--amber)':'var(--red)';
+
+  div.innerHTML = `
+    <div class="card-hdr">
+      <div class="c-rank${i===0?' top':''}">#${i+1}</div>
+      <div class="c-info">
+        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:5px">
+          <div class="c-name">${p.name||'Product'}</div>
+          <span class="top-lbl">Top Pick</span>
+        </div>
+        <div class="c-meta">
+          <span class="c-price">$${(p.price||0).toFixed(2)}</span>
+          <span class="rbadge ${rbCls}">${rbDot} ${rl.charAt(0).toUpperCase()+rl.slice(1)} Risk</span>
+        </div>
+        ${p.verdict?`<div class="c-verdict">${p.verdict}</div>`:''}
+      </div>
+      <div class="sc-circle ${scCls}"><div class="sn">${sc}</div><div class="sl">Score</div></div>
+    </div>
+    <div class="card-metrics">
+      <div class="mc"><div class="mc-l">Monthly Revenue</div><div class="mc-v ${rvC}">$${(p.monthlyRevenue||0).toLocaleString()}</div><div class="mc-s">${(p.monthlySalesVolume||0).toLocaleString()} units/mo</div></div>
+      <div class="mc"><div class="mc-l">Margin</div><div class="mc-v ${mrC}">${(p.marginPercent||0).toFixed(1)}%</div><div class="mc-s">$${(p.profitPerUnit||0).toFixed(2)} profit/unit</div></div>
+      <div class="mc"><div class="mc-l">COGS / Fees</div><div class="mc-v">$${(p.cogs||0).toFixed(2)}</div><div class="mc-s">Amazon $${(p.amazonFees||0).toFixed(2)}</div></div>
+      <div class="mc"><div class="mc-l">Est. CPC</div><div class="mc-v ${cpcC}">$${(p.cpc||0).toFixed(2)}</div><div class="mc-s">Cost per click</div></div>
+    </div>
+    <div class="card-bot">
+      <div><div class="cb-l">Sales Consistency</div><div class="con-wrap"><div class="con-fill" style="width:${p.salesConsistency||0}%;background:${conCol}"></div></div><div style="font-size:11px;color:${conCol}">${p.salesConsistency||0}/100 — ${p.consistencyNote||''}</div></div>
+      <div><div class="cb-l">Reviews & Rating</div><div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">${stars}<span style="font-size:13px;font-weight:600;color:var(--text)">${rat.toFixed(1)}</span></div><div style="font-size:11px;color:var(--muted)">${(p.reviewCount||0).toLocaleString()} reviews</div></div>
+      <div><div class="cb-l">Risk Factors</div><div class="rtags">${rth}${noR}</div></div>
+    </div>`;
+  return div;
+}
+</script>
+</body>
+</html>
