@@ -356,8 +356,9 @@ function buildCard(p, i) {
     const c = r.includes('elec')?'re':r.includes('frag')||r.includes('break')?'rb':r.includes('heavy')||r.includes('over')?'rh2':r.includes('season')?'rs':'rg';
     return `<span class="rtag ${c}">${rf}</span>`;
   }).join('');
-  const noR = !p.riskFactors?.length?'<span class="rtag rsf">Low risk</span>':'';
-  const conCol = (p.salesConsistency||0)>=75?'var(--green)':(p.salesConsistency||0)>=50?'var(--amber)':'var(--red)';
+  const noR = !p.riskFactors?.length?'<span class="rtag rsf">Low risk</span>':'
+';
+  const conCol = (p.salesConsistency||0)>=75?'var(--green)':(p.salesConsistency||0)>=50?'var(--amber)':'var(--red);';
 
   div.innerHTML = `
     <div class="card-hdr">
@@ -387,7 +388,8 @@ function buildCard(p, i) {
       <div><div class="cb-l">Risk Factors</div><div class="rtags">${rth}${noR}</div></div>
     </div>`;
   return div;
-}
+} 
+} 
 </script>
 </body>
 </html>
